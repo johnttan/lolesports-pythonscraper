@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>scraper.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  <div class='section'>
+    <div class='docs'><h1>scraper.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p>This function processes the dictionary of match data
+by adding, removing and modifying various keys and values.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">pyquery</span> <span class="kn">import</span> <span class="n">PyQuery</span> <span class="k">as</span> <span class="n">pq</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+<span class="kn">from</span> <span class="nn">config</span> <span class="kn">import</span> <span class="n">configuration</span> <span class="k">as</span> <span class="n">cfg</span>
+<span class="kn">from</span> <span class="nn">playerinfo</span> <span class="kn">import</span> <span class="n">playerinfo</span> <span class="k">as</span> <span class="n">playerinfo</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">processGame</span><span class="p">(</span><span class="n">jsonmatchdata</span><span class="p">):</span>
+    <span class="n">matchnumber</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">jsonmatchdata</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">matchdoc</span> <span class="o">=</span> <span class="n">jsonmatchdata</span><span class="p">[</span><span class="n">matchnumber</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;dev&#39;</span><span class="p">][</span><span class="s">&#39;log&#39;</span><span class="p">]:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;gameID: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">matchnumber</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">matchnumber</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;gamematchnumbers&#39;</span><span class="p">][</span><span class="s">&#39;na&#39;</span><span class="p">]:</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="s">&#39;na&#39;</span>
+    <span class="k">elif</span> <span class="nb">int</span><span class="p">(</span><span class="n">matchnumber</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;gamematchnumbers&#39;</span><span class="p">][</span><span class="s">&#39;eu&#39;</span><span class="p">]:</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="s">&#39;eu&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>Game EG vs. C9 in between 1882 and 1884 got assigned match number 2156 by Riot
+these lines catch the chronological error and corrects it for storing in the database.
+rename some key fields and store match information. region, matchid, etc.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">elif</span> <span class="nb">int</span><span class="p">(</span><span class="n">matchnumber</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2156</span><span class="p">:</span>
+            <span class="n">matchnumber</span> <span class="o">=</span> <span class="mi">1883</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="s">&#39;na&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">&#39;Error: Match number not recognized&#39;</span>
+
+    <span class="n">winteamname</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">winteamid</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">loseteamname</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="n">loseteamid</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">teamid</span><span class="p">,</span> <span class="n">team</span> <span class="ow">in</span> <span class="n">matchdoc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">playerid</span><span class="p">,</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">team</span><span class="o">.</span><span class="n">items</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>determine which team won and which team lost. store that info.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="n">player</span><span class="p">[</span><span class="s">&#39;playername&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">player</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;player field&#39;</span><span class="p">)</span>
+            <span class="n">player</span><span class="p">[</span><span class="s">&#39;teamid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">teamid</span>
+            <span class="n">player</span><span class="p">[</span><span class="s">&#39;matchid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">matchnumber</span><span class="p">)</span>
+            <span class="n">player</span><span class="p">[</span><span class="s">&#39;region&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">region</span>
+            <span class="n">player</span><span class="p">[</span><span class="s">&#39;playerid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">playerid</span>
+            <span class="n">player</span><span class="p">[</span><span class="s">&#39;teamid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">teamid</span>
+            <span class="n">player</span><span class="p">[</span><span class="s">&#39;teamname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">playerinfo</span><span class="p">[</span><span class="n">player</span><span class="p">[</span><span class="s">&#39;playername&#39;</span><span class="p">]][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">player</span><span class="p">[</span><span class="s">&#39;role&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">playerinfo</span><span class="p">[</span><span class="n">player</span><span class="p">[</span><span class="s">&#39;playername&#39;</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>switch key names to playername instead of playerid. assign appropriate team.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">if</span> <span class="n">player</span><span class="p">[</span><span class="s">&#39;win&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">winteamname</span> <span class="o">=</span> <span class="n">player</span><span class="p">[</span><span class="s">&#39;teamname&#39;</span><span class="p">]</span>
+                <span class="n">winteamid</span> <span class="o">=</span> <span class="n">teamid</span>
+            <span class="k">elif</span> <span class="n">player</span><span class="p">[</span><span class="s">&#39;win&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">loseteamname</span> <span class="o">=</span> <span class="n">player</span><span class="p">[</span><span class="s">&#39;teamname&#39;</span><span class="p">]</span>
+                <span class="n">loseteamid</span> <span class="o">=</span> <span class="n">teamid</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">playerid</span><span class="p">,</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">team</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">playername</span> <span class="o">=</span> <span class="n">player</span><span class="p">[</span><span class="s">&#39;playername&#39;</span><span class="p">]</span>
+            <span class="n">team</span><span class="p">[</span><span class="n">playername</span><span class="p">]</span> <span class="o">=</span> <span class="n">team</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">playerid</span><span class="p">)</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;playerlist&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;winteamname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">winteamname</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;winteamid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">winteamid</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;loseteamname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">loseteamname</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;loseteamid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">loseteamid</span>
+
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;players&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">matchdoc</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;winteamid&#39;</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">playername</span><span class="p">,</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">matchdoc</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;loseteamid&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;players&#39;</span><span class="p">][</span><span class="n">playername</span><span class="p">]</span> <span class="o">=</span> <span class="n">player</span>
+    <span class="k">for</span> <span class="n">playername</span><span class="p">,</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;players&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;playerlist&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">playername</span><span class="p">)</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;gameID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">matchnumber</span><span class="p">)</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;region&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">region</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;scored&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;analyzed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;statistics&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p>for redundancy</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">for</span> <span class="n">playername</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;playerlist&#39;</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">playername</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">playerinfo</span><span class="p">):</span>
+                <span class="n">pid</span> <span class="o">=</span> <span class="n">playername</span>
+                <span class="n">pname</span> <span class="o">=</span> <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;players&#39;</span><span class="p">][</span><span class="n">pid</span><span class="p">][</span><span class="s">&#39;playername&#39;</span><span class="p">]</span>
+                <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;players&#39;</span><span class="p">][</span><span class="n">pname</span><span class="p">]</span> <span class="o">=</span> <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;players&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+                <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;playerlist&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+                <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;playerlist&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span>
+
+
+    <span class="k">return</span> <span class="n">matchdoc</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>Runs necessary functions to retrieve, parse, and format the match data.
+Returns a dictionary with match data.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">retrieveGame</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+    <span class="n">page</span> <span class="o">=</span> <span class="n">pq</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;dev&#39;</span><span class="p">][</span><span class="s">&#39;log&#39;</span><span class="p">]:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">parsedpage</span> <span class="o">=</span> <span class="n">page</span><span class="p">(</span><span class="s">&quot;script:contains(&#39;jQuery.extend&#39;)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">html</span><span class="p">()[</span><span class="mi">31</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">jsonmatchdata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">parsedpage</span><span class="p">)[</span><span class="s">&quot;esportsDataDump&quot;</span><span class="p">][</span><span class="s">&quot;matchDataDump&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">jsonmatchdata</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">retrieveandprocessGame</span><span class="p">(</span><span class="n">urlmatchnumber</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;dev&#39;</span><span class="p">][</span><span class="s">&#39;log&#39;</span><span class="p">]:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;URLmatch: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">urlmatchnumber</span><span class="p">))</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;retrieveurl&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">urlmatchnumber</span><span class="p">)</span>
+    <span class="n">jsonmatchdata</span> <span class="o">=</span> <span class="n">retrieveGame</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">matchdoc</span> <span class="o">=</span> <span class="n">processGame</span><span class="p">(</span><span class="n">jsonmatchdata</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>print(matchdoc)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">matchdoc</span><span class="p">[</span><span class="s">&#39;URLmatchnumber&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">urlmatchnumber</span>
+    <span class="k">return</span> <span class="n">matchdoc</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>Tests</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_testNA</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">urlmatchnumber</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;urlmatchnumbers&#39;</span><span class="p">][</span><span class="s">&#39;na&#39;</span><span class="p">]:</span>
+            <span class="n">retrieveandprocessGame</span><span class="p">(</span><span class="n">urlmatchnumber</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_testEU</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">urlmatchnumber</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;urlmatchnumbers&#39;</span><span class="p">][</span><span class="s">&#39;eu&#39;</span><span class="p">]:</span>
+            <span class="n">retrieveandprocessGame</span><span class="p">(</span><span class="n">urlmatchnumber</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;dev&#39;</span><span class="p">][</span><span class="s">&#39;scraper&#39;</span><span class="p">]:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">_testNA</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;No more games NA&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">_testEU</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;No more games EU&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>For singular test cases. Accepts urlmatchnumber as argument. Refer to config.py
+pprint(retrieveandprocessGame(1693))</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

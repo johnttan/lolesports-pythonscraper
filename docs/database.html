@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>database.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  <div class='section'>
+    <div class='docs'><h1>database.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p>This module commits data retrieved
+by scraper.py to the MongoDB database specified in config.py.</p>
+<p>Can be imported into a scheduling module.
+Import retrievelatest(region) to retrieve the latest games.
+Specify argument region as string, i.e. retrievelatest('na')</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pymongo</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+<span class="kn">from</span> <span class="nn">pymongo</span> <span class="kn">import</span> <span class="n">MongoClient</span>
+<span class="kn">from</span> <span class="nn">config</span> <span class="kn">import</span> <span class="n">configuration</span> <span class="k">as</span> <span class="n">cfg</span>
+<span class="kn">from</span> <span class="nn">playerinfo</span> <span class="kn">import</span> <span class="n">playerinfo</span>
+<span class="kn">from</span> <span class="nn">scraper</span> <span class="kn">import</span> <span class="n">retrieveandprocessGame</span> <span class="k">as</span> <span class="n">retrieve</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Retrieve(matchnumber). Returns matchdoc dict.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>Checks if there is document for storing retrieved URLs. If not, one is made.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">client</span> <span class="o">=</span> <span class="n">MongoClient</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;deployurl&#39;</span><span class="p">])</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;deploydatabase&#39;</span><span class="p">]]</span>
+<span class="n">cUsers</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Users</span>
+<span class="n">cPlayers</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Players</span>
+<span class="n">cGames</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Games</span>
+<span class="n">cRetrievedURLs</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">RetrievedURLs</span>
+<span class="n">cGames</span><span class="o">.</span><span class="n">create_index</span><span class="p">(</span><span class="s">&quot;gameID&quot;</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>Resets the RetrievedURLs collection in MongoDB. Hardcoded regions.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">if</span> <span class="n">cRetrievedURLs</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">retrievedURLs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;na&#39;</span><span class="p">:[],</span>
+        <span class="s">&#39;eu&#39;</span><span class="p">:[]</span>
+    <span class="p">}</span>
+    <span class="n">cRetrievedURLs</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">retrievedURLs</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>Updates the RetrievedURLs document to reflect the games that have been retrieved,
+and what the next game is (region + next)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">resetretrievedurls</span><span class="p">():</span>
+    <span class="n">cRetrievedURLs</span><span class="o">.</span><span class="n">update</span><span class="p">({},</span> <span class="p">{</span><span class="s">&quot;$set&quot;</span><span class="p">:</span>
+                                    <span class="p">{</span>
+                                        <span class="s">&quot;na&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                                        <span class="s">&quot;nanext&quot;</span><span class="p">:</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;urlmatchnumbers&#39;</span><span class="p">][</span><span class="s">&#39;na&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                                        <span class="s">&quot;eu&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                                        <span class="s">&quot;eunext&quot;</span><span class="p">:</span> <span class="n">cfg</span><span class="p">[</span><span class="s">&#39;urlmatchnumbers&#39;</span><span class="p">][</span><span class="s">&#39;eu&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                                    <span class="p">}</span>
+                                <span class="p">})</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>Retrieves and stores latest games in a region, commits data to database.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">updatelatestgame</span><span class="p">(</span><span class="n">urlmatchnumber</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+    <span class="n">retrievedURLs</span> <span class="o">=</span> <span class="n">cRetrievedURLs</span><span class="o">.</span><span class="n">find_one</span><span class="p">()</span>
+    <span class="n">cRetrievedURLs</span><span class="o">.</span><span class="n">update</span><span class="p">({},</span> <span class="p">{</span><span class="s">&quot;$addToSet&quot;</span><span class="p">:</span>
+                                    <span class="p">{</span>
+                                        <span class="n">region</span><span class="p">:</span> <span class="n">urlmatchnumber</span>
+                                    <span class="p">}</span>
+                                <span class="p">})</span>
+    <span class="n">cRetrievedURLs</span><span class="o">.</span><span class="n">update</span><span class="p">({},</span> <span class="p">{</span><span class="s">&quot;$set&quot;</span><span class="p">:</span>
+                                    <span class="p">{</span>
+                                        <span class="n">region</span> <span class="o">+</span> <span class="s">&#39;next&#39;</span><span class="p">:</span> <span class="n">urlmatchnumber</span>
+                                    <span class="p">}</span>
+                                <span class="p">})</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">retrievelatest</span><span class="p">(</span><span class="n">region</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span>  <span class="p">{</span>
+            <span class="n">region</span><span class="p">:</span> <span class="n">cRetrievedURLs</span><span class="o">.</span><span class="n">find_one</span><span class="p">()[</span><span class="n">region</span> <span class="o">+</span> <span class="s">&#39;next&#39;</span><span class="p">]</span>
+            <span class="p">}</span>
+            <span class="k">try</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>This is where the game is stored in database.
+Throws DuplicateKeyError if game already exists</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="n">cGames</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">retrieve</span><span class="p">(</span><span class="n">url</span><span class="p">[</span><span class="n">region</span><span class="p">]))</span>
+            <span class="k">except</span> <span class="n">pymongo</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">DuplicateKeyError</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">url</span><span class="p">[</span><span class="n">region</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#39; already retrieved.&#39;</span><span class="p">)</span>
+            <span class="n">updatelatestgame</span><span class="p">(</span><span class="n">url</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">region</span><span class="p">)</span>
+            
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;No more games &#39;</span> <span class="o">+</span> <span class="n">region</span><span class="p">)</span>
+        <span class="k">pass</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <p>Calls functions to retrieve and store all NA and EU games
+Note: Resets RetrievedURLs to empty arrays and the first game of each region.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">retrieveallgames</span><span class="p">():</span>
+    <span class="n">resetretrievedurls</span><span class="p">()</span>
+    <span class="n">retrievelatest</span><span class="p">(</span><span class="s">&#39;na&#39;</span><span class="p">)</span>
+    <span class="n">retrievelatest</span><span class="p">(</span><span class="s">&#39;eu&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">retrievelatestna</span><span class="p">():</span>
+    <span class="n">retrievelatest</span><span class="p">(</span><span class="s">&#39;na&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">retrievelatesteu</span><span class="p">():</span>
+    <span class="n">retrievelatest</span><span class="p">(</span><span class="s">&#39;eu&#39;</span><span class="p">)</span>
+
+
+<span class="n">exports</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;retrievelatest&#39;</span><span class="p">:</span> <span class="n">retrievelatest</span><span class="p">,</span>
+    <span class="s">&#39;resetretrieved&#39;</span><span class="p">:</span> <span class="n">resetretrievedurls</span>
+<span class="p">}</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>
